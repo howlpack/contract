@@ -38,7 +38,9 @@ mod tests {
         let mut app = mock_app();
         let cw_template_id = app.store_code(contract_template());
 
-        let msg = InstantiateMsg { count: 1i32 };
+        let msg = InstantiateMsg {
+            dens_addr: Addr::unchecked("dens_addr"),
+        };
         let cw_template_contract_addr = app
             .instantiate_contract(
                 cw_template_id,
@@ -55,17 +57,26 @@ mod tests {
         (app, cw_template_contract)
     }
 
-    mod count {
+    mod update_config {
         use super::*;
         use crate::msg::ExecuteMsg;
 
         #[test]
-        fn count() {
+        fn update_config() {
             let (mut app, cw_template_contract) = proper_instantiate();
 
-            let msg = ExecuteMsg::Increment {};
+            let msg = ExecuteMsg::UpdateConfig {
+                owner: Some(Addr::unchecked(USER)),
+                dens_addr: None,
+            };
             let cosmos_msg = cw_template_contract.call(msg).unwrap();
-            app.execute(Addr::unchecked(USER), cosmos_msg).unwrap();
+            let res = app.execute(Addr::unchecked(USER), cosmos_msg.clone());
+            match res {
+                Err(_) => {}
+                _ => panic!("Must return unauthorized error"),
+            }
+
+            app.execute(Addr::unchecked(ADMIN), cosmos_msg).unwrap();
         }
     }
 }
